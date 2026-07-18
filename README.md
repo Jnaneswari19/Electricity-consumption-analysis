@@ -1,77 +1,136 @@
-# Electricity Consumption Analysis using Tableau
+# ⚡ Plugging into the Future: Electricity Consumption Analysis in India (2019-2020)
 
-## Project Overview
+An interactive, dark-themed Full-Stack Data Engineering and Analytics web application that analyzes state-wise electricity usage patterns in India from **January 2019 to December 2020**.
 
-This project analyzes electricity consumption data to identify usage patterns, trends, and insights. Using Tableau for data visualization, the project transforms raw electricity data into interactive dashboards that help understand consumption behavior over time.
+This project investigates seasonal peaks, regional differences, and the severe demand drops caused by the **COVID-19 lockdowns in early 2020**, along with each state's recovery trajectory.
 
-## Objectives
+---
 
-* Analyze electricity consumption trends
-* Identify peak usage periods
-* Visualize electricity usage by region or category
-* Create an interactive dashboard for better data interpretation
+## 🏗️ Architecture & Pipeline
 
-## Tools & Technologies
+```
+  ┌─────────────────┐      ┌──────────────┐      ┌───────────────┐
+  │  Consumption.csv│ ───▶ │  SQLite DB   │ ◀─── │   Flask App   │
+  │  (Raw Dataset)  │      │  (SQLAlchemy)│      │   (app.py)    │
+  └─────────────────┘      └──────────────┘      └───────┬───────┘
+                                                         │
+                                                 ┌───────▼───────┐
+                                                 │ Jinja Pages   │
+                                                 │ (HTML + CSS)  │
+                                                 └───────┬───────┘
+                                                         │
+                                                 ┌───────▼───────┐
+                                                 │ Tableau Embed │
+                                                 │ (Embedding v3)│
+                                                 └───────────────┘
+```
 
-* Tableau
-* MySQL
-* CSV Dataset
-* Data Visualization Techniques
+1. **Data Collection & Storage**: A Pandas ETL script loads, cleans, and structures 16,599 daily data records, mapping region codes (`NR`, `WR`, etc.) and state abbreviations (`UP`, `MP`, etc.) to full-form presentation names, storing them in an SQLite database.
+2. **Flask Backend**: An asynchronous SQLAlchemy API feeds real-time summary statistics, regional rankings, and recovery trends to the frontend templates.
+3. **Glassmorphism Frontend UI**: Built with a responsive dark sidebar, animated progress bars, scroll animations, data tables, and an integrated Tableau dashboard.
+4. **Tableau Embedding v3**: Embeds active dashboards programmatically using Tableau’s modern Embedding API v3 with desktop layout constraints.
 
-## Project Structure
+---
 
-Electricity-consumption-analysis
-├── Dataset/
-│   └── consumption.csv
-├── Notebook/
-│   └── app.py                  
-├── Report/
-│   └── Documentation.pdf
-├── Screenshots/
-│   ├── Dashboard 1.png
-│   ├── Dashboard 2.png
-│   ├── Dashboard 3.png
-│   ├── Dashboard 4.png
-│   └── Data collection and extraction.png
-├── Tableau/
-│   └── Electricity-dashboard.twbx
-└── README.md
+## 📊 Three Core Scenarios Addressed
 
-## Data Processing Steps
+1. **Overall Consumption Trends**: Tracking monthly national shifts, seasonal demand swings (summer cooling vs. winter heating), and the severe impact of COVID-19 lockdown phases.
+2. **Regional Variations in Demand**: Side-by-side analysis of Northern, Southern, Eastern, Western, and Northeastern state metrics (e.g., exposing heavy industrial load in Western states vs. low footprint in Northeastern states).
+3. **Recovery After Lockdown**: Tracking recovery percentages and speed from the deepest trough in April 2020 through December 2020.
 
-1. Data collection from database
-2. Data cleaning and preparation
-3. Export dataset as CSV
-4. Import dataset into Tableau
-5. Create charts and dashboards
-6. Generate insights from visualizations
+---
 
-## Dashboard Features
+## 🛠️ Technology Stack
 
-* Electricity consumption trend analysis
-* Monthly usage comparison
-* Category-wise electricity consumption
-* Interactive visual dashboard
+* **Data ETL / Pipeline**: Python 3, Pandas, NumPy
+* **Database & ORM**: SQLite 3, SQLAlchemy 2.x
+* **Backend Framework**: Flask 3.x (Python)
+* **Frontend Design**: Modern responsive CSS (Glassmorphism, custom scroll effects, variable-driven dark theme)
+* **Visualizations**: Tableau Public / Tableau Embedding API v3
 
-## Explanation Video
+---
 
-https://drive.google.com/file/d/1fZuuA19zERKZNF57YKLDMckTeMAcjjum/view?usp=sharing
+## 📁 File Structure
 
-## How to Run the Project
+```
+electricity-consumption-analysis/
+│
+├── generate_data.py          # ETL database pipeline
+├── sql_queries.py            # Scenario-specific query verification
+├── app.py                    # Flask server & backend endpoints
+├── requirements.txt          # Python dependencies
+├── Consumption.csv           # Raw dataset
+├── electricity_db.sqlite     # Generated database (ignored by Git)
+│
+├── static/
+│   └── css/
+│       └── style.css         # Dark theme style system
+│
+└── templates/
+    ├── index.html            # Dashboard UI template
+    └── insights.html         # Data tables & recovery analytics page
+```
 
-1. Download the dataset from the repository
-2. Open Tableau Desktop
-3. Import the CSV file
-4. Open the Tableau workbook (.twbx file)
-5. Explore the interactive dashboard
+---
 
-## Learning Outcomes
+## 🚀 Installation & Local Execution
 
-* Data cleaning and preparation
-* Data visualization using Tableau
-* Dashboard creation
-* Data interpretation and analysis
+### 1. Clone the repository & Navigate
+```bash
+git clone <your-repository-url>
+cd electricity-consumption-analysis
+```
 
+### 2. Install dependencies
+Ensure you have Python installed, then run:
+```bash
+pip install -r requirements.txt
+```
 
+### 3. Run the ETL Pipeline
+Process the raw CSV file and build the local SQLite database:
+```bash
+python generate_data.py
+```
 
+### 4. Verify SQL Queries (Optional)
+Run the verification script to output database stats directly in the console:
+```bash
+python sql_queries.py
+```
 
+### 5. Launch the Web Application
+```bash
+python app.py
+```
+Open **[http://127.0.0.1:5000/](http://127.0.0.1:5000/)** in your browser to view the application.
+
+---
+
+## 📈 Connecting Your Tableau Dashboard
+
+By default, the dashboard includes a sample Tableau visualization. To replace it with your own:
+
+1. Publish your dashboard to **Tableau Public** or your private server.
+2. Copy the dashboard share URL.
+3. Open `templates/index.html` and replace the `src` attribute of the `<tableau-viz>` element (line ~155) with your URL:
+
+```html
+<tableau-viz id="tableauViz"
+             src="https://public.tableau.com/views/YOUR_WORKBOOK_NAME/YOUR_DASHBOARD"
+             width="100%"
+             height="650"
+             toolbar="bottom"
+             hide-tabs>
+</tableau-viz>
+```
+
+---
+
+## ✅ Tableau Performance Checklist
+
+Before submitting, make sure to optimize your Tableau dashboard performance:
+* **Use Extracts**: Convert your database link into a Tableau extract (`.hyper`) for rapid rendering.
+* **Pre-Aggregate**: If daily details aren't needed, aggregate views to the monthly level in your queries.
+* **Optimize Calculated Fields**: Avoid nested LOD (Level of Detail) calculations. Perform mathematical additions/conversions database-side before rendering.
+* **Filter Contexts**: Turn your main parameters (e.g., date ranges, regions) into *Context Filters* to decrease Tableau's active dataset scan size.
