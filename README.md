@@ -75,9 +75,8 @@ electricity-consumption-analysis/
 
 ## 🚀 Installation & Local Execution
 
-### 1. Clone the repository & Navigate
+### 1.Navigate
 ```bash
-git clone <your-repository-url>
 cd electricity-consumption-analysis
 ```
 
