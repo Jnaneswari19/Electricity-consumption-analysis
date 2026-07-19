@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="In-depth insights into India's electricity consumption — top states, seasonal patterns, regional comparisons, and COVID-19 recovery analysis.">
+    <title>Insights | Plugging into the Future</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- ═══════════ MOBILE SIDEBAR TOGGLE ═══════════ -->
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">☰</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="app-layout">
+
+    <!-- ═══════════ SIDEBAR ═══════════ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">⚡</div>
+            <h1>Plugging into<br>the Future</h1>
+            <p>Electricity Consumption Analysis</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <span class="nav-section-label">Analytics</span>
+
+            <a href="/" class="nav-link {{ 'active' if page == 'dashboard' }}">
+                <span class="nav-icon">📊</span>
+                Dashboard
+            </a>
+
+            <a href="/insights" class="nav-link {{ 'active' if page == 'insights' }}">
+                <span class="nav-icon">🔍</span>
+                Insights
+            </a>
+
+            <span class="nav-section-label">Reference</span>
+
+            <a href="/#project-overview" class="nav-link">
+                <span class="nav-icon">📋</span>
+                Project Overview
+            </a>
+
+            <a href="/#tableau-section" class="nav-link">
+                <span class="nav-icon">📈</span>
+                Tableau Dashboard
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <p><span class="pulse-dot"></span>&nbsp; Live from electricity_db &nbsp;•&nbsp; Jan 2019 – Dec 2020</p>
+        </div>
+    </aside>
+
+    <!-- ═══════════ MAIN CONTENT ═══════════ -->
+    <main class="main-content">
+        <div class="content-wrapper">
+
+            <!-- Page Header -->
+            <div class="page-header fade-in">
+                <h2>🔍 <span class="header-accent">Insights</span></h2>
+                <p class="subtitle">
+                    Deep-dive analytics drawn from {{ "{:,}".format(data.record_count) }} consumption records
+                    across {{ data.state_count }} Indian states and union territories.
+                </p>
+            </div>
+
+
+            <!-- ── Summary KPI Strip ─────────────────────────────── -->
+            <div class="kpi-grid" style="margin-bottom: 32px;">
+                <div class="kpi-card fade-in">
+                    <div class="kpi-label">Peak Month</div>
+                    {% set peak = insights.seasonal_pattern | sort(attribute='avg_mw', reverse=true) | first %}
+                    <div class="kpi-value blue">{{ peak.month }}</div>
+                    <div class="kpi-sub">{{ "{:,.0f}".format(peak.avg_mw) }} MW avg/state</div>
+                </div>
+
+                <div class="kpi-card fade-in">
+                    <div class="kpi-label">Lockdown Drop</div>
+                    <div class="kpi-value rose">▼ {{ data.lockdown_impact.pct_drop }}%</div>
+                    <div class="kpi-sub">Apr 2020 vs Apr 2019</div>
+                </div>
+
+                <div class="kpi-card fade-in">
+                    <div class="kpi-label">Fastest Recovery</div>
+                    {% set fastest = insights.fastest_recovery | first %}
+                    <div class="kpi-value emerald">{{ fastest.state }}</div>
+                    <div class="kpi-sub">+{{ fastest.recovery_pct }}% (Apr → Dec 2020)</div>
+                </div>
+            </div>
+
+
+            <!-- ══════════════════════════════════════════════════════
+                 SECTION 1: TOP 10 CONSUMING STATES
+                 ══════════════════════════════════════════════════════ -->
+            <div class="section-card fade-in">
+                <h3><span class="card-icon">🏆</span> Top 10 Consuming States</h3>
+                <p class="card-description">Ranked by total electricity consumption over the 24-month analysis period.</p>
+
+                <div class="data-table-wrapper">
+                    <table class="data-table" id="topStatesTable">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>State</th>
+                                <th>Region</th>
+                                <th>Total (MW)</th>
+                                <th>Monthly Avg (MW)</th>
+                                <th>Share of National</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for state in insights.top_10_states %}
+                            <tr>
+                                <td style="color: var(--text-muted);">#{{ loop.index }}</td>
+                                <td style="font-weight: 600;">{{ state.state }}</td>
+                                <td>
+                                    <span class="region-tag {{ state.region | lower }}">{{ state.region }}</span>
+                                </td>
+                                <td style="font-family: 'JetBrains Mono', monospace;">
+                                    {{ "{:,.0f}".format(state.total_mw) }}
+                                </td>
+                                <td style="font-family: 'JetBrains Mono', monospace;">
+                                    {{ "{:,.0f}".format(state.avg_mw) }}
+                                </td>
+                                <td style="font-family: 'JetBrains Mono', monospace;">
+                                    {{ "%.1f" | format(state.total_mw / data.total_consumption_mw * 100) }}%
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+            <!-- ══════════════════════════════════════════════════════
+                 SECTION 2: SEASONAL CONSUMPTION PATTERNS
+                 ══════════════════════════════════════════════════════ -->
+            <div class="section-card fade-in">
+                <h3><span class="card-icon">🌡️</span> Seasonal Consumption Patterns</h3>
+                <p class="card-description">Average per-state consumption by calendar month, revealing summer peaks and winter troughs.</p>
+
+                <div class="stat-bar-container">
+                    {% set max_seasonal = insights.seasonal_pattern | map(attribute='avg_mw') | max %}
+                    {% set month_colors = ['blue', 'blue', 'emerald', 'amber', 'amber', 'amber',
+                                           'emerald', 'emerald', 'emerald', 'purple', 'purple', 'blue'] %}
+                    {% for month in insights.seasonal_pattern %}
+                    <div class="stat-bar-row">
+                        <span class="stat-bar-label">{{ month.month[:3] }}</span>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill {{ month_colors[loop.index0] }}"
+                                 style="width: {{ (month.avg_mw / max_seasonal * 100) | round(1) }}%"></div>
+                        </div>
+                        <span class="stat-bar-value">{{ "{:,.0f}".format(month.avg_mw) }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+
+            <!-- ══════════════════════════════════════════════════════
+                 SECTION 3: YEAR-OVER-YEAR REGIONAL COMPARISON
+                 ══════════════════════════════════════════════════════ -->
+            <div class="section-card fade-in">
+                <h3><span class="card-icon">📊</span> Year-over-Year Regional Comparison</h3>
+                <p class="card-description">Total consumption by region for 2019 vs 2020, showing COVID-19 impact on each region.</p>
+
+                <div class="data-table-wrapper">
+                    <table class="data-table" id="yoyTable">
+                        <thead>
+                            <tr>
+                                <th>Region</th>
+                                <th>2019 Total (MW)</th>
+                                <th>2020 Total (MW)</th>
+                                <th>Change</th>
+                                <th>Impact</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set ns = namespace(regions={}) %}
+                            {% for item in insights.yoy_comparison %}
+                                {% if item.region not in ns.regions %}
+                                    {% set _ = ns.regions.update({item.region: {}}) %}
+                                {% endif %}
+                                {% set _ = ns.regions[item.region].update({item.year: item.total_mw}) %}
+                            {% endfor %}
+
+                            {% for region, years in ns.regions.items() %}
+                            {% set y2019 = years.get('2019', 0) %}
+                            {% set y2020 = years.get('2020', 0) %}
+                            {% set change_pct = ((y2020 - y2019) / y2019 * 100) if y2019 else 0 %}
+                            <tr>
+                                <td>
+                                    <span class="region-tag {{ region | lower }}">{{ region }}</span>
+                                </td>
+                                <td style="font-family: 'JetBrains Mono', monospace;">
+                                    {{ "{:,.0f}".format(y2019) }}
+                                </td>
+                                <td style="font-family: 'JetBrains Mono', monospace;">
+                                    {{ "{:,.0f}".format(y2020) }}
+                                </td>
+                                <td style="font-family: 'JetBrains Mono', monospace;">
+                                    {{ "%+.1f" | format(change_pct) }}%
+                                </td>
+                                <td>
+                                    {% if change_pct < 0 %}
+                                    <span class="impact-badge negative">▼ Decline</span>
+                                    {% else %}
+                                    <span class="impact-badge positive">▲ Growth</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+            <!-- ══════════════════════════════════════════════════════
+                 SECTION 4: FASTEST RECOVERY STATES
+                 ══════════════════════════════════════════════════════ -->
+            <div class="section-card fade-in">
+                <h3><span class="card-icon">🔄</span> Top 10 — Fastest Recovery (Apr → Dec 2020)</h3>
+                <p class="card-description">States that bounced back strongest from the April 2020 lockdown trough to December 2020.</p>
+
+                <div class="data-table-wrapper">
+                    <table class="data-table" id="recoveryTable">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>State</th>
+                                <th>Region</th>
+                                <th>Apr 2020 (MW)</th>
+                                <th>Dec 2020 (MW)</th>
+                                <th>Recovery</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for state in insights.fastest_recovery %}
+                            <tr>
+                                <td style="color: var(--text-muted);">#{{ loop.index }}</td>
+                                <td style="font-weight: 600;">{{ state.state }}</td>
+                                <td>
+                                    <span class="region-tag {{ state.region | lower }}">{{ state.region }}</span>
+                                </td>
+                                <td style="font-family: 'JetBrains Mono', monospace;">
+                                    {{ "{:,.0f}".format(state.apr_mw) }}
+                                </td>
+                                <td style="font-family: 'JetBrains Mono', monospace;">
+                                    {{ "{:,.0f}".format(state.dec_mw) }}
+                                </td>
+                                <td>
+                                    <span class="impact-badge positive">+{{ state.recovery_pct }}%</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+            <!-- ══════════════════════════════════════════════════════
+                 LOCKDOWN IMPACT DETAIL
+                 ══════════════════════════════════════════════════════ -->
+            <div class="grid-2 fade-in">
+                <div class="overview-card">
+                    <h4>📉 Lockdown Impact Summary</h4>
+                    <ul>
+                        <li>National consumption in April 2019: <strong>{{ "{:,.0f}".format(data.lockdown_impact.apr_2019_mw) }} MW</strong></li>
+                        <li>National consumption in April 2020: <strong>{{ "{:,.0f}".format(data.lockdown_impact.apr_2020_mw) }} MW</strong></li>
+                        <li>Year-over-year drop: <strong>{{ data.lockdown_impact.pct_drop }}%</strong></li>
+                        <li>Western region saw the sharpest industrial decline</li>
+                        <li>Northeastern states were relatively insulated</li>
+                    </ul>
+                </div>
+
+                <div class="overview-card">
+                    <h4>📈 Recovery Timeline</h4>
+                    <ul>
+                        <li><strong>Apr 2020</strong> — Deepest trough (Phase 1 lockdown)</li>
+                        <li><strong>May 2020</strong> — Partial unlock begins</li>
+                        <li><strong>Jun–Jul 2020</strong> — Unlock 1 & 2, ~8-5% below normal</li>
+                        <li><strong>Aug–Sep 2020</strong> — Gradual normalization</li>
+                        <li><strong>Oct–Dec 2020</strong> — Near-complete recovery</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div><!-- /content-wrapper -->
+    </main>
+</div><!-- /app-layout -->
+
+
+<!-- ═══════════ SIDEBAR TOGGLE SCRIPT ═══════════ -->
+<script>
+    const sidebar = document.getElementById('sidebar');
+    const toggle  = document.getElementById('sidebarToggle');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    toggle.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+    });
+
+    overlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+    });
+</script>
+
+</body>
+</html>

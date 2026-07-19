@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Plugging into the Future — An interactive dashboard exploring India's state-wise electricity consumption patterns from 2019 to 2020, including COVID-19 lockdown impact analysis.">
+    <title>Plugging into the Future | Electricity Consumption Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- ═══════════ MOBILE SIDEBAR TOGGLE ═══════════ -->
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">☰</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="app-layout">
+
+    <!-- ═══════════ SIDEBAR ═══════════ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">⚡</div>
+            <h1>Plugging into<br>the Future</h1>
+            <p>Electricity Consumption Analysis</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <span class="nav-section-label">Analytics</span>
+
+            <a href="/" class="nav-link {{ 'active' if page == 'dashboard' }}">
+                <span class="nav-icon">📊</span>
+                Dashboard
+            </a>
+
+            <a href="/insights" class="nav-link {{ 'active' if page == 'insights' }}">
+                <span class="nav-icon">🔍</span>
+                Insights
+            </a>
+
+            <span class="nav-section-label">Reference</span>
+
+            <a href="#project-overview" class="nav-link" id="navOverview">
+                <span class="nav-icon">📋</span>
+                Project Overview
+            </a>
+
+            <a href="#tableau-section" class="nav-link" id="navTableau">
+                <span class="nav-icon">📈</span>
+                Tableau Dashboard
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <p><span class="pulse-dot"></span>&nbsp; Live from electricity_db &nbsp;•&nbsp; Jan 2019 – Dec 2020</p>
+        </div>
+    </aside>
+
+    <!-- ═══════════ MAIN CONTENT ═══════════ -->
+    <main class="main-content">
+        <div class="content-wrapper">
+
+            <!-- Page Header -->
+            <div class="page-header fade-in">
+                <h2>⚡ <span class="header-accent">Dashboard</span></h2>
+                <p class="subtitle">
+                    National overview of electricity consumption across {{ data.state_count }} states,
+                    covering January 2019 through December 2020.
+                </p>
+            </div>
+
+
+            <!-- ── KPI Cards ─────────────────────────────────────── -->
+            <div class="kpi-grid">
+                <div class="kpi-card fade-in">
+                    <div class="kpi-label">Total National Consumption</div>
+                    <div class="kpi-value blue">
+                        {{ "{:,.0f}".format(data.total_consumption_mw) }} MW
+                    </div>
+                    <div class="kpi-sub">Across 24 months</div>
+                </div>
+
+                <div class="kpi-card fade-in">
+                    <div class="kpi-label">Highest Consuming State</div>
+                    <div class="kpi-value emerald">
+                        {{ data.top_state.name }}
+                    </div>
+                    <div class="kpi-sub">{{ "{:,.0f}".format(data.top_state.total_mw) }} MW total</div>
+                </div>
+
+                <div class="kpi-card fade-in">
+                    <div class="kpi-label">Lowest Consuming State</div>
+                    <div class="kpi-value purple">
+                        {{ data.bottom_state.name }}
+                    </div>
+                    <div class="kpi-sub">{{ "{:,.0f}".format(data.bottom_state.total_mw) }} MW total</div>
+                </div>
+
+                <div class="kpi-card fade-in">
+                    <div class="kpi-label">States & UTs Tracked</div>
+                    <div class="kpi-value amber">{{ data.state_count }}</div>
+                    <div class="kpi-sub">Across 5 regions</div>
+                </div>
+
+                <div class="kpi-card fade-in">
+                    <div class="kpi-label">COVID-19 Lockdown Impact</div>
+                    <div class="kpi-value rose">▼ {{ data.lockdown_impact.pct_drop }}%</div>
+                    <div class="kpi-sub">April 2020 vs April 2019</div>
+                </div>
+
+                <div class="kpi-card fade-in">
+                    <div class="kpi-label">Data Records</div>
+                    <div class="kpi-value cyan">{{ "{:,}".format(data.record_count) }}</div>
+                    <div class="kpi-sub">Monthly state-level readings</div>
+                </div>
+            </div>
+
+
+            <!-- ── Regional Breakdown ────────────────────────────── -->
+            <div class="section-card fade-in">
+                <h3><span class="card-icon">🗺️</span> Regional Consumption Breakdown</h3>
+                <p class="card-description">Average and total electricity consumption by region across the full analysis period.</p>
+
+                <div class="stat-bar-container">
+                    {% set max_total = data.regions[0].total_mw if data.regions else 1 %}
+                    {% set bar_colors = ['blue', 'emerald', 'amber', 'purple', 'rose'] %}
+                    {% for region in data.regions %}
+                    <div class="stat-bar-row">
+                        <span class="stat-bar-label">
+                            <span class="region-tag {{ region.region | lower }}">{{ region.region }}</span>
+                        </span>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill {{ bar_colors[loop.index0 % 5] }}"
+                                 style="width: {{ (region.total_mw / max_total * 100) | round(1) }}%"></div>
+                        </div>
+                        <span class="stat-bar-value">{{ "{:,.0f}".format(region.total_mw) }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+
+            <!-- ── Tableau Dashboard Embed ───────────────────────── -->
+            <div class="tableau-container fade-in" id="tableau-section">
+                <div class="tableau-header">
+                    <h3><span class="card-icon">📈</span> Tableau Dashboard</h3>
+                    <span class="tableau-badge">Interactive Visualization</span>
+                </div>
+                <div class="tableau-embed-area">
+                    <!-- Tableau Embedding API v3 Script -->
+                    <script type="module" src="https://public.tableau.com/javascripts/api/tableau.embedding.3.latest.min.js"></script>
+                    
+                    <!-- Tableau Visualisation Element -->
+                    <!-- REPLACE the src attribute below with your published Tableau dashboard URL -->
+                    <tableau-viz id="tableauViz"
+                                 src="https://public.tableau.com/views/Superstore_24/Overview"
+                                 width="100%"
+                                 height="650"
+                                 toolbar="bottom"
+                                 device="desktop"
+                                 hide-tabs>
+                    </tableau-viz>
+                </div>
+            </div>
+
+
+            <!-- ── Project Overview ──────────────────────────────── -->
+            <div class="grid-2 fade-in" id="project-overview">
+                <div class="overview-card">
+                    <h4>🎯 Scenario 1 — Overall Consumption Trends</h4>
+                    <ul>
+                        <li>Month-by-month national totals (Jan 2019 – Dec 2020)</li>
+                        <li>Seasonal demand peaks in summer (Apr–Jun)</li>
+                        <li>COVID-19 lockdown crater visible Mar–Jun 2020</li>
+                        <li>Year-over-year growth comparison</li>
+                    </ul>
+                </div>
+
+                <div class="overview-card">
+                    <h4>🗺️ Scenario 2 — Regional Variations in Demand</h4>
+                    <ul>
+                        <li>Western region leads with heavy industrial load</li>
+                        <li>Northeastern states have minimal footprint</li>
+                        <li>Southern region shows strong AC-driven summer peaks</li>
+                        <li>Regional structural differences exposed</li>
+                    </ul>
+                </div>
+
+                <div class="overview-card">
+                    <h4>🔄 Scenario 3 — Recovery After Lockdown</h4>
+                    <ul>
+                        <li>Deepest drop: April 2020 (Phase 1 lockdown)</li>
+                        <li>Phased recovery tracked May – December 2020</li>
+                        <li>Industrial states recovered slower than agrarian ones</li>
+                        <li>Near-full recovery by Q4 2020</li>
+                    </ul>
+                </div>
+
+                <div class="overview-card">
+                    <h4>🛠️ Tech Stack</h4>
+                    <ul>
+                        <li>Python + Pandas for data engineering</li>
+                        <li>SQLAlchemy + SQLite for storage</li>
+                        <li>Flask for backend web framework</li>
+                        <li>Vanilla CSS dark-mode design system</li>
+                        <li>Tableau for interactive dashboards</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div><!-- /content-wrapper -->
+    </main>
+</div><!-- /app-layout -->
+
+
+<!-- ═══════════ SIDEBAR TOGGLE SCRIPT ═══════════ -->
+<script>
+    const sidebar = document.getElementById('sidebar');
+    const toggle  = document.getElementById('sidebarToggle');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    toggle.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+    });
+
+    overlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+    });
+
+    // Smooth scroll for in-page links
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            const target = document.querySelector(link.getAttribute('href'));
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // Close mobile sidebar
+                sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

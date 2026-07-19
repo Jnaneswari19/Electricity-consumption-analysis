@@ -1,0 +1,23 @@
+# Python environment
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints
+venv/
+.venv/
+env/
+dist/
+build/
+*.egg-info/
+
+# Databases & local state
+electricity_db.sqlite
+.agents/
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+scratch/
